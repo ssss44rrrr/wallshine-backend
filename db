@@ -1,0 +1,7 @@
+const mongoose = require("mongoose");
+
+mongoose.connect("mongodb+srv://ssss44rrrr_db_user:pd2rFbvNjpmWKPlz@cluster0.kh2orh8.mongodb.net/wallshineDB?retryWrites=true&w=majority")
+  .then(() => console.log("MongoDB Connected"))
+  .catch(err => console.log("MongoDB Error:", err));
+
+module.exports = mongoose;
