@@ -22,8 +22,9 @@ const limiter = rateLimit({
 app.use(limiter);
 
 app.use(cors({
-  origin: "https://glistening-kitten-c6d93f.netlify.app",
-  methods: ["GET", "POST", "PUT", "DELETE"]
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
 }));
 
 app.use(express.json());
