@@ -1,7 +1,10 @@
 const express = require("express");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 
+console.log("SERVER STARTING...");
 require("./db"); // MongoDB connection
+const bcrypt = require("bcryptjs");
 
 const Quote = require("./models/Quote"); // (new model bana sakte ho)
 const Review = require("./models/Review");
@@ -10,9 +13,19 @@ const Admin = require("./models/Admin");
 const Contact = require("./models/Contact");
 
 const app = express();
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 100, // 100 requests per IP
+  message: "Too many requests, try again later."
+});
+
+app.use(limiter);
+
 app.use(cors({
-  origin: true
+  origin: "https://glistening-kitten-c6d93f.netlify.app",
+  methods: ["GET", "POST", "PUT", "DELETE"]
 }));
+
 app.use(express.json());
 
 /* =========================
@@ -23,36 +36,41 @@ app.get("/reviews", async (req, res) => {
     const sort = req.query.sort || "latest";
 
     let sortQuery = {};
-
     if (sort === "oldest") sortQuery = { date: 1 };
     else if (sort === "high") sortQuery = { rating: -1 };
     else if (sort === "low") sortQuery = { rating: 1 };
     else sortQuery = { date: -1 };
 
     const page = parseInt(req.query.page) || 1;
-const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 10;
 
-const search = req.query.search || "";
+    const search = req.query.search;
 
-const filter = {
-  $or: [
-    { name: { $regex: search, $options: "i" } },
-    { comment: { $regex: search, $options: "i" } }
-  ]
-};
+    let filter = {};
 
-const reviews = await Review.find(filter)
-  .sort(sortQuery)
-  .skip((page - 1) * limit)
-  .limit(limit);
+    if (search && search.trim() !== "") {
+      filter = {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { comment: { $regex: search, $options: "i" } }
+        ]
+      };
+    }
 
-const total = await Review.countDocuments(filter);
+    const reviews = await Review.find(filter)
+      .sort(sortQuery)
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    const total = await Review.countDocuments(filter);
+
     res.json({
       total,
       data: reviews
     });
 
   } catch (err) {
+    console.log("REVIEWS ERROR:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -273,8 +291,11 @@ app.post("/admin-register", async (req, res) => {
   }
 });
 
-
 app.get("/create-admin", async (req, res) => {
+  if (req.query.key !== "mySecret123") {
+    return res.status(403).send("Forbidden");
+  }
+
   const Admin = require("./models/Admin");
 
   await Admin.create({
