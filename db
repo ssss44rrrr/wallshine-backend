@@ -1,5 +1,8 @@
 const mongoose = require("mongoose");
 
+console.log("DB FILE LOADED");
+console.log("MONGO_URL =", process.env.MONGO_URL);
+
 mongoose.connect(process.env.MONGO_URL)
   .then(() => console.log("MongoDB Connected"))
   .catch(err => console.log("MongoDB Error:", err));
